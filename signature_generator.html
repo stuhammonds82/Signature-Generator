@@ -121,7 +121,7 @@
   .btn-gems   { background: linear-gradient(90deg, #0099d6, #00b5e2); }
 
   /* Preview + output */
-  .output-section { margin-top: 28px; display: none; }
+  .output-section { margin-top: 28px; }
 
   .section-label {
     font-size: 11px;
@@ -310,11 +310,24 @@ function selectBrand(brand) {
     b.className = 'brand-btn';
   });
   const map = { d2: 'active-d2', cruise: 'active-cruise', gems: 'active-gems' };
-  document.getElementById('btn-' + (brand === 'd2' ? 'd2' : brand === 'cruise' ? 'cruise' : 'gems')).classList.add(map[brand]);
+  document.getElementById('btn-' + brand).classList.add(map[brand]);
 
   const isGems = brand === 'gems';
   const btn = document.getElementById('generate-btn');
   btn.className = 'generate-btn ' + (isGems ? 'btn-gems' : 'btn-d2');
+
+  // Apply brand-specific focus ring colour to all inputs
+  document.querySelectorAll('input').forEach(inp => {
+    inp.classList.toggle('gems-focus', isGems);
+  });
+
+  // Update email placeholder to reflect active brand domain
+  const emailPlaceholders = {
+    d2: 'e.g. sarah@destination2.co.uk',
+    cruise: 'e.g. sarah@d2cruise.co.uk',
+    gems: 'e.g. sarah@holidaygems.co.uk'
+  };
+  document.getElementById('inp-email').placeholder = emailPlaceholders[brand];
 
   document.getElementById('output-section').style.display = 'none';
 }
@@ -390,10 +403,34 @@ function generate() {
 
 function copyCode() {
   const code = document.getElementById('code-box').textContent;
-  navigator.clipboard.writeText(code).then(() => {
-    document.getElementById('copied-msg').style.display = 'block';
-    setTimeout(() => document.getElementById('copied-msg').style.display = 'none', 3000);
-  });
+
+  function showCopied() {
+    const msg = document.getElementById('copied-msg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(showCopied).catch(() => fallbackCopy(code, showCopied));
+  } else {
+    fallbackCopy(code, showCopied);
+  }
+}
+
+function fallbackCopy(text, onSuccess) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    onSuccess();
+  } catch (e) {
+    alert('Copy failed — please manually select the code above and press Ctrl+C (or Cmd+C on Mac).');
+  }
+  document.body.removeChild(ta);
 }
 </script>
 </body>
